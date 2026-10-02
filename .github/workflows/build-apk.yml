@@ -27,11 +27,27 @@ jobs:
             chmod +x ./android/gradlew
           fi
 
-      - name: Inject Legacy Repository Mirrors
+      - name: Force Global Legacy Repositories
         run: |
-          # Finds the build.gradle files and forces them to use JitPack and public JCenter archives as fallbacks
-          find . -name "build.gradle" -exec sed -i 's/jcenter()/jcenter()\n        maven { url "https://jitpack.io" }\n        maven { url "https://gradle.org" }/g' {} +
-          find . -name "settings.gradle" -exec sed -i 's/jcenter()/jcenter()\n        maven { url "https://jitpack.io" }\n        maven { url "https://gradle.org" }/g' {} +
+          mkdir -p ~/.gradle
+          cat << 'EOF' > ~/.gradle/init.gradle
+          allprojects {
+              buildscript {
+                  repositories {
+                      maven { url "https://jitpack.io" }
+                      maven { url "https://gradle.org" }
+                      mavenCentral()
+                      google()
+                  }
+              }
+              repositories {
+                  maven { url "https://jitpack.io" }
+                  maven { url "https://gradle.org" }
+                  mavenCentral()
+                  google()
+              }
+          }
+          EOF
 
       - name: Build Debug APK
         env:
