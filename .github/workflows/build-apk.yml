@@ -27,24 +27,34 @@ jobs:
             chmod +x ./android/gradlew
           fi
 
-      - name: Force Global Legacy Repositories
+      - name: Force Global Legacy Repositories & Bypass Broken Plugins
         run: |
           mkdir -p ~/.gradle
           cat << 'EOF' > ~/.gradle/init.gradle
           allprojects {
               buildscript {
                   repositories {
+                      google()
+                      mavenCentral()
                       maven { url "https://jitpack.io" }
                       maven { url "https://gradle.org" }
-                      mavenCentral()
-                      google()
+                  }
+                  configurations.all {
+                      resolutionStrategy {
+                          // Forces Gradle to substitute the broken dependency path with a working version
+                          eachDependency { DependencyResolveDetails details ->
+                              if (details.requested.group == 'com.github.ben-manes') {
+                                  details.useVersion '0.39.0'
+                              }
+                          }
+                      }
                   }
               }
               repositories {
+                  google()
+                  mavenCentral()
                   maven { url "https://jitpack.io" }
                   maven { url "https://gradle.org" }
-                  mavenCentral()
-                  google()
               }
           }
           EOF
@@ -53,12 +63,13 @@ jobs:
         env:
           GRADLE_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
         run: |
+          # Added --no-build-cache and excluding the faulty version check task entirely
           if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug
+              ./gradlew assembleDebug -x dependencyUpdates --no-build-cache
           elif [ -d "android" ]; then
-            cd android && ./gradlew assembleDebug
+              cd android && ./gradlew assembleDebug -x dependencyUpdates --no-build-cache
           else
-            echo "Gradle wrapper not found in root or android directory!" && exit 1
+              echo "Gradle wrapper not found!" && exit 1
           fi
 
       - name: Upload APK Artifact
