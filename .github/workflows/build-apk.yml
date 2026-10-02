@@ -1,0 +1,36 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch: # This manually forces the "Run workflow" button to show up!
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Make Gradle Executable
+        run: chmod +x ./android/gradlew
+        continue-on-error: true # Skips if gradlew is in the root directory instead
+
+      - name: Build Debug APK
+        run: |
+          if [ -d "android" ]; then
+            cd android && ./gradlew assembleDebug
+          else
+            ./gradlew assembleDebug
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-debug-apk
+          path: |
+            **/build/outputs/apk/debug/*.apk
