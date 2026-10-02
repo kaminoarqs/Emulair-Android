@@ -27,7 +27,7 @@ jobs:
             chmod +x ./android/gradlew
           fi
 
-      - name: Force Global Legacy Repositories & Bypass Broken Plugins
+      - name: Force Global Legacy Repositories
         run: |
           mkdir -p ~/.gradle
           cat << 'EOF' > ~/.gradle/init.gradle
@@ -39,16 +39,6 @@ jobs:
                       maven { url "https://jitpack.io" }
                       maven { url "https://gradle.org" }
                   }
-                  configurations.all {
-                      resolutionStrategy {
-                          // Forces Gradle to substitute the broken dependency path with a working version
-                          eachDependency { DependencyResolveDetails details ->
-                              if (details.requested.group == 'com.github.ben-manes') {
-                                  details.useVersion '0.39.0'
-                              }
-                          }
-                      }
-                  }
               }
               repositories {
                   google()
@@ -59,15 +49,20 @@ jobs:
           }
           EOF
 
+      - name: Nuke Broken Version Checking Plugin
+        run: |
+          # Completely deletes the broken version-checking plugin lines from all build configuration files
+          find . -name "*.gradle" -exec sed -i '/com.github.ben-manes/d' {} +
+          find . -name "*.gradle" -exec sed -i '/gradle-versions-plugin/d' {} +
+
       - name: Build Debug APK
         env:
           GRADLE_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
         run: |
-          # Added --no-build-cache and excluding the faulty version check task entirely
           if [ -f "./gradlew" ]; then
-              ./gradlew assembleDebug -x dependencyUpdates --no-build-cache
+              ./gradlew assembleDebug --no-build-cache
           elif [ -d "android" ]; then
-              cd android && ./gradlew assembleDebug -x dependencyUpdates --no-build-cache
+              cd android && ./gradlew assembleDebug --no-build-cache
           else
               echo "Gradle wrapper not found!" && exit 1
           fi
