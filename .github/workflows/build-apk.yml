@@ -49,11 +49,11 @@ jobs:
           }
           EOF
 
-      - name: Nuke Broken Version Checking Plugin
+      - name: Nuke Broken Version Checking Plugin Everywhere
         run: |
-          # Completely deletes the broken version-checking plugin lines from all build configuration files
-          find . -name "*.gradle" -exec sed -i '/com.github.ben-manes/d' {} +
-          find . -name "*.gradle" -exec sed -i '/gradle-versions-plugin/d' {} +
+          # Recursively finds all gradle files, kotlin scripts, and properties files to delete the broken plugin lines
+          find . -type f \( -name "*.gradle" -o -name "*.kts" -o -name "*.properties" \) -exec sed -i '/com.github.ben-manes/d' {} +
+          find . -type f \( -name "*.gradle" -o -name "*.kts" -o -name "*.properties" \) -exec sed -i '/gradle-versions-plugin/d' {} +
 
       - name: Build Debug APK
         env:
