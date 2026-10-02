@@ -14,7 +14,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11' # Changed to Java 11 to support the legacy Gradle configuration
+          java-version: '11'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -27,9 +27,14 @@ jobs:
             chmod +x ./android/gradlew
           fi
 
+      - name: Inject Legacy Repository Mirrors
+        run: |
+          # Finds the build.gradle files and forces them to use JitPack and public JCenter archives as fallbacks
+          find . -name "build.gradle" -exec sed -i 's/jcenter()/jcenter()\n        maven { url "https://jitpack.io" }\n        maven { url "https://gradle.org" }/g' {} +
+          find . -name "settings.gradle" -exec sed -i 's/jcenter()/jcenter()\n        maven { url "https://jitpack.io" }\n        maven { url "https://gradle.org" }/g' {} +
+
       - name: Build Debug APK
         env:
-          # This safely overrides the broken memory arguments in their project files
           GRADLE_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
         run: |
           if [ -f "./gradlew" ]; then
