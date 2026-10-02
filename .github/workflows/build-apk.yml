@@ -49,11 +49,25 @@ jobs:
           }
           EOF
 
-      - name: Nuke Broken Version Checking Plugin Everywhere
+      - name: Nuke Broken Build Scripts Completely
         run: |
-          # Recursively finds all gradle files, kotlin scripts, and properties files to delete the broken plugin lines
-          find . -type f \( -name "*.gradle" -o -name "*.kts" -o -name "*.properties" \) -exec sed -i '/com.github.ben-manes/d' {} +
-          find . -type f \( -name "*.gradle" -o -name "*.kts" -o -name "*.properties" \) -exec sed -i '/gradle-versions-plugin/d' {} +
+          # 1. Delete the entire buildSrc folder causing the compilation errors
+          rm -rf buildSrc/
+          
+          # 2. Safely remove references to the plugin in settings files
+          if [ -f "settings.gradle.kts" ]; then
+            sed -i '/ben-manes/d' settings.gradle.kts
+            sed -i '/versions/d' settings.gradle.kts
+          fi
+          if [ -f "settings.gradle" ]; then
+            sed -i '/ben-manes/d' settings.gradle
+            sed -i '/versions/d' settings.gradle
+          fi
+          
+          # 3. Clean up the root build configuration files without breaking syntax
+          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i '/ben-manes/d' {} +
+          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i '/DependencyUpdatesTask/d' {} +
+          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i '/dependencyUpdates/d' {} +
 
       - name: Build Debug APK
         env:
