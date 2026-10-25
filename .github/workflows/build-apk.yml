@@ -3,7 +3,7 @@ name: Android CI Build
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # This adds a manual button to start the build
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -17,15 +17,15 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
-        java-version: '11' # Jetpack Compose usually requires Java 17
+        java-version: '11'
 
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
 
-    - name: Inject Fallback Repositories for Dead Dependencies
+    - name: Inject Fallback Mirrors Into All Projects
       run: |
-        # This injects a public archive mirror into the build configuration so it can find the missing touch library
-        sed -i "s|repositories {|repositories {\n        maven { url 'https://aliyun.com' }\n        maven { url 'https://jitpack.io' }|g" build.gradle || true
+        # This appends a global rule to the master settings forcing every sub-module to use working archive mirrors
+        echo -e "\nallprojects {\n    repositories {\n        maven { url 'https://aliyun.com' }\n        maven { url 'https://jitpack.io' }\n    }\n}" >> build.gradle
 
     - name: Compile and Build Debug APK
       run: ./gradlew assembleDebug
@@ -35,4 +35,3 @@ jobs:
       with:
         name: emulair-debug-apk
         path: app/build/outputs/apk/debug/*.apk
-        
