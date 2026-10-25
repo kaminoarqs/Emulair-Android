@@ -22,11 +22,11 @@ jobs:
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
 
-    - name: Inject Fallback Mirrors Into Settings
+    - name: Force Mirrors into Every Module Configuration
       run: |
-        # This injects the archive mirrors directly into the global dependency management block in settings.gradle
-        sed -i "s|repositories {|repositories {\n        maven { url 'https://aliyun.com' }\n        maven { url 'https://jitpack.io' }|g" settings.gradle || true
-
+        # This scans the entire project structure and forces the fallback mirrors into every single build file
+        find . -name "build.gradle" -exec sed -i "s|repositories {|repositories {\n        maven { url 'https://aliyun.com' }\n        maven { url 'https://jitpack.io' }|g" {} +
+        
     - name: Compile and Build Debug APK
       run: ./gradlew assembleDebug
 
