@@ -22,6 +22,11 @@ jobs:
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
 
+    - name: Inject Fallback Repositories for Dead Dependencies
+      run: |
+        # This injects a public archive mirror into the build configuration so it can find the missing touch library
+        sed -i "s|repositories {|repositories {\n        maven { url 'https://aliyun.com' }\n        maven { url 'https://jitpack.io' }|g" build.gradle || true
+
     - name: Compile and Build Debug APK
       run: ./gradlew assembleDebug
 
