@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
-        java-version: '17' # Jetpack Compose usually requires Java 17
+        java-version: '11' # Jetpack Compose usually requires Java 17
 
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
