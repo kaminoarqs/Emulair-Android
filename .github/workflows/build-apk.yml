@@ -1,90 +1,33 @@
-name: Build Android APK
+name: Android CI Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # This adds a manual button to start the build
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '11'
+    - name: Set up Java Environment
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17' # Jetpack Compose usually requires Java 17
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x gradlew
 
-      - name: Make Gradle Executable
-        run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-          elif [ -f "./android/gradlew" ]; then
-            chmod +x ./android/gradlew
-          fi
+    - name: Compile and Build Debug APK
+      run: ./gradlew assembleDebug
 
-      - name: Force Global Legacy Repositories
-        run: |
-          mkdir -p ~/.gradle
-          cat << 'EOF' > ~/.gradle/init.gradle
-          allprojects {
-              buildscript {
-                  repositories {
-                      google()
-                      mavenCentral()
-                      maven { url "https://jitpack.io" }
-                      maven { url "https://gradle.org" }
-                  }
-              }
-              repositories {
-                  google()
-                  mavenCentral()
-                  maven { url "https://jitpack.io" }
-                  maven { url "https://gradle.org" }
-              }
-          }
-          EOF
-
-      - name: Nuke Broken Build Scripts Completely
-        run: |
-          # 1. Delete the entire buildSrc folder causing the compilation errors
-          rm -rf buildSrc/
-          
-          # 2. Safely remove references to the plugin in settings files
-          if [ -f "settings.gradle.kts" ]; then
-            sed -i '/ben-manes/d' settings.gradle.kts
-            sed -i '/versions/d' settings.gradle.kts
-          fi
-          if [ -f "settings.gradle" ]; then
-            sed -i '/ben-manes/d' settings.gradle
-            sed -i '/versions/d' settings.gradle
-          fi
-          
-          # 3. Clean up the root build configuration files without breaking syntax
-          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i '/ben-manes/d' {} +
-          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i '/DependencyUpdatesTask/d' {} +
-          find . -type f \( -name "*.gradle" -o -name "*.kts" \) -exec sed -i '/dependencyUpdates/d' {} +
-
-      - name: Build Debug APK
-        env:
-          GRADLE_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
-        run: |
-          if [ -f "./gradlew" ]; then
-              ./gradlew assembleDebug --no-build-cache
-          elif [ -d "android" ]; then
-              cd android && ./gradlew assembleDebug --no-build-cache
-          else
-              echo "Gradle wrapper not found!" && exit 1
-          fi
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: emulator-debug-apk
-          path: |
-            **/build/outputs/apk/debug/*.apk
-            
+    - name: Upload Finished APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: emulair-debug-apk
+        path: app/build/outputs/apk/debug/*.apk
+        
