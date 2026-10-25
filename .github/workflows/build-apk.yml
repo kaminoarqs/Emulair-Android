@@ -22,11 +22,13 @@ jobs:
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
 
-    - name: Force Mirrors into Every Module Configuration
+    - name: Strip Dead Dependencies Out of Code
       run: |
-        # This scans the entire project structure and forces the fallback mirrors into every single build file
-        find . -name "build.gradle" -exec sed -i "s|repositories {|repositories {\n        maven { url 'https://aliyun.com' }\n        maven { url 'https://jitpack.io' }|g" {} +
-        
+        # Force-remove the missing dependency lines from every gradle file across the project
+        find . -name "build.gradle" -exec sed -i "/com.dinuscxj:multitouchgesturedetector/d" {} +
+        find . -name "build.gradle" -exec sed -i "/multitouchgesturedetector/d" {} +
+
+       
     - name: Compile and Build Debug APK
       run: ./gradlew assembleDebug
 
